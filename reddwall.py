@@ -57,10 +57,11 @@ class reddit:
         nobrax = re.sub('\[.*\]', '', oneline)
         nopars = re.sub('\(.*\)', '', nobrax)
         nosubs = re.sub('/r/.* ', '', nopars)
-        nopunc = re.sub('\p{P}+', ' ', nosubs)
+        nonums = re.sub('[0-9]', '', nosubs)
+        nopunc = re.sub(ur'\p{P}+', ' ', nonums)
         spacecoll = re.sub(' +', ' ', nopunc)
-        print unidecode.unidecode(spacecoll).lower()
-        print rawtitle
+        eatshorts = [x for x in re.split(' ', spacecoll) if len(x) > 3]
+        print unidecode.unidecode(' '.join(eatshorts)).lower()
 
     def downloadImage(self, imgurl, imgname, dest=None):
         if not dest:
