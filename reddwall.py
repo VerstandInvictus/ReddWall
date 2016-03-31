@@ -5,9 +5,9 @@ import os
 import requests
 import datetime
 import regex as re
+from collections import Counter
+
 requests.packages.urllib3.disable_warnings()
-
-
 subreddits = ["earthporn", "japanpics"]
 
 
@@ -48,20 +48,42 @@ class reddit:
         for s in (atop,):
             for link in s:
                 submissions.add(link)
+        titles = list()
         for each in submissions:
-            self.generateName(each)
+            t = self.generateName(each)
+            titles.append(re.split(' ', t))
+        #self.upGoerFive(titles)
 
     def generateName(self, sub):
-        rawtitle = sub.title
-        oneline = re.sub('\n', ' ', rawtitle)
-        nobrax = re.sub('\[.*\]', '', oneline)
-        nopars = re.sub('\(.*\)', '', nobrax)
-        nosubs = re.sub('/r/.* ', '', nopars)
-        nonums = re.sub('[0-9]', '', nosubs)
-        nopunc = re.sub(ur'\p{P}+', ' ', nonums)
-        spacecoll = re.sub(' +', ' ', nopunc)
-        eatshorts = [x for x in re.split(' ', spacecoll) if len(x) > 3]
-        print unidecode.unidecode(' '.join(eatshorts)).lower()
+        rawtitle = unidecode.unidecode(sub.title.lower())
+        spacesubs = ['\n', ur'\p{P}+']
+        blanksubs = ['[\[\(].*[\)\]]', '/r/.*', '[0-9]']
+        subdict = {
+            "mt": "mount",
+            "st helens": "saint_helens"
+        }
+        for pattern in spacesubs:
+            rawtitle = re.sub(pattern, ' ', rawtitle)
+        for pattern in blanksubs:
+            rawtitle = re.sub(pattern, '', rawtitle)
+        rawtitle = ' '.join(rawtitle.split())
+        for pattern in subdict.iterkeys():
+            rawtitle = re.sub(pattern, subdict[pattern], rawtitle)
+        eatshorts = [x for x in re.split(' ', rawtitle) if len(x) > 1]
+        try:
+            ind = eatshorts.index('mount')
+            print eatshorts[ind], eatshorts[ind+1], eatshorts[ind+2]
+            #print rawtitle
+        except:
+            pass
+        return rawtitle
+
+    def upGoerFive(self, titles):
+        c = Counter()
+        for t in titles:
+                c.update(t)
+        for word, count in c.most_common(50):
+            print "{0} :: {1}".format(count, word)
 
     def downloadImage(self, imgurl, imgname, dest=None):
         if not dest:
