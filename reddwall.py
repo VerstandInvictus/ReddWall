@@ -7,7 +7,10 @@ import datetime
 import regex as re
 from collections import Counter
 
-requests.packages.urllib3.disable_warnings()
+try:
+    requests.packages.urllib3.disable_warnings()
+except:
+    pass
 subreddits = ["earthporn", "japanpics"]
 
 
@@ -51,32 +54,54 @@ class reddit:
         titles = list()
         for each in submissions:
             t = self.generateName(each)
-            titles.append(re.split(' ', t))
+            for tag in t:
+                titles.append(t)
         #self.upGoerFive(titles)
+
+    def mergeNames(self, wordlist, swaps, direction):
+        for s in swaps:
+            indices = [i for i, x in enumerate(wordlist) if x == s]
+            for ind in indices:
+                if direction == "next":
+                    ind2 = ind + 1
+                else:
+                    ind2 = ind
+                    ind -= 1
+                insert = "_".join((wordlist[ind], wordlist[ind2]))
+                wordlist.pop(ind)
+                wordlist.pop(ind2)
+                wordlist.append(insert)
+                print "====="
+        return wordlist
 
     def generateName(self, sub):
         rawtitle = unidecode.unidecode(sub.title.lower())
         spacesubs = ['\n', ur'\p{P}+']
         blanksubs = ['[\[\(].*[\)\]]', '/r/.*', '[0-9]']
-        subdict = {
-            "mt": "mount",
-            "st helens": "saint_helens"
+        abbrevdict = {
+            " mt ": " mount ",
+            " st ": " saint ",
         }
+        subdict = {
+            "saint helens": "saint_helens"
+        }
+        forelabels = ["mount", "lake", "north", "south", "west", "east"]
+        afterlabels = ['river', 'ridge']
         for pattern in spacesubs:
             rawtitle = re.sub(pattern, ' ', rawtitle)
         for pattern in blanksubs:
             rawtitle = re.sub(pattern, '', rawtitle)
         rawtitle = ' '.join(rawtitle.split())
+        for pattern in abbrevdict.iterkeys():
+            rawtitle = re.sub(pattern, abbrevdict[pattern], rawtitle)
         for pattern in subdict.iterkeys():
             rawtitle = re.sub(pattern, subdict[pattern], rawtitle)
-        eatshorts = [x for x in re.split(' ', rawtitle) if len(x) > 1]
-        try:
-            ind = eatshorts.index('mount')
-            print eatshorts[ind], eatshorts[ind+1], eatshorts[ind+2]
-            #print rawtitle
-        except:
-            pass
-        return rawtitle
+        eatshorts = [x for x in re.split(' ', rawtitle) if len(x) > 3]
+        self.mergeNames(eatshorts, forelabels, "next")
+        self.mergeNames(eatshorts, afterlabels, "prev")
+        print eatshorts
+        print rawtitle
+        return eatshorts
 
     def upGoerFive(self, titles):
         c = Counter()
